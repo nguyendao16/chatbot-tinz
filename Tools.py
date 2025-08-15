@@ -5,7 +5,7 @@ import json
 from langgraph.types import Command, interrupt
 embeddings = OllamaEmbeddings(model = "bge-m3:latest")
 
-@tool
+@tool("get_class_info")
 def get_class_info(mos = None, Class = None):
     """
     Retrieve class name, language and mos version about the available classes base on MOS version or Class name.
@@ -32,7 +32,7 @@ def get_class_info(mos = None, Class = None):
         })
     return json.dumps(class_info, ensure_ascii=False, indent=2)
 
-@tool
+@tool("rag_search")
 def rag_search(text):
     """
     Queries the RAG (Retrieval-Augmented Generation) system to retrieve and generate an answer based on the input question.
@@ -64,10 +64,9 @@ def rag_search(text):
         })
     return json.dumps(rag_answer, ensure_ascii=False, indent=2)
 
-from langgraph.types import interrupt, Command
 import requests
 
-@tool
+@tool("human_assistance")
 def human_assistance(question: str) -> str:
     """
     Request human assistance when you can not get the information needed to answer. This tool have all information, and use this tool when the other tools can not provide needed information.
@@ -92,7 +91,7 @@ def knowledge_enriching(question:str, answer:str):
     connection = psycopg2.connect("host=100.107.93.75 dbname=Chatbot_db user=n8n_user password=n8n_pass") 
     cursor = connection.cursor()
     cursor.execute("INSERT INTO vector_store (content, embedding) VALUES (%s, %s)", (content, chunk))
-
+    
     connection.commit()
     cursor.close()
     connection.close()

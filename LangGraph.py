@@ -17,7 +17,8 @@ from pydantic import BaseModel
 llm = ChatOllama(model = "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q3_K_L",
                 temperature = 0.1,
                 top_k = 20,
-                top_p = 0.6)
+                top_p = 0.6,
+                num_gpu_layers = 999)
 
 #Prompt
 with open('/home/aipencil/DuyNgaDocTon/prompt_template.txt', 'r', encoding='utf-8') as f:
@@ -30,6 +31,7 @@ prompt_template = ChatPromptTemplate.from_messages([
 #State
 class State(TypedDict):
     messages: Annotated[list, add_messages]
+    mid: str
  
 #Node
 def chatbot(state: State): #START
@@ -60,6 +62,7 @@ with RedisSaver.from_conn_string("redis://:12345678Aa@100.107.93.75:6379/0") as 
 class Tinz(BaseModel):
     user: str
     thread_id: str
+    mid: str
 
 app = FastAPI()
 @app.post("/chat")
