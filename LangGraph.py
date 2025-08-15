@@ -9,10 +9,11 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph import add_messages
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.prebuilt import tools_condition
 from langgraph.checkpoint.redis import RedisSaver
 from fastapi import FastAPI
 from pydantic import BaseModel
+import json
 
 llm = ChatOllama(model = "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q3_K_L",
                 temperature = 0.1,
@@ -39,7 +40,40 @@ def chatbot(state: State): #START
     return {"messages": [response]}
 
 from Tools import get_class_info, rag_search, human_assistance
+from langchain_core.messages import ToolMessage
 tools = [get_class_info, rag_search, human_assistance]
+class ToolNode:
+    """A node that runs the tools requested in the last AIMessage."""
+    def __init__(self, tools: list) -> None:
+        self.tools_by_name = {tool.name: tool for tool in tools}
+    def __call__(self, inputs: dict):
+        if messages := inputs.get("messages", []):
+            message = messages[-1]
+        else:
+            raise ValueError("No message found in input")
+        outputs = []
+        mid = inputs.get("mid")
+        for tool_call in message.tool_calls:
+            #Muc dich la de lay dua message id vao ben trong parameter, de khi can, co the lay duoc username
+            if tool_call["name"] == "human_assistance":
+                tool_call["args"]["mid"] = mid
+                tool_result = self.tools_by_name[tool_call["name"]].invoke(
+                    tool_call["args"]
+                )
+            else:
+                tool_result = self.tools_by_name[tool_call["name"]].invoke(
+                    tool_call["args"]
+                )
+            outputs.append(
+                ToolMessage(
+                    content=json.dumps(tool_result),
+                    name=tool_call["name"],
+                    tool_call_id=tool_call["id"],
+                )
+            )
+        return {"messages": outputs}
+
+
 tool_node = ToolNode(tools) #END (if condition)
 llm_with_tools = prompt_template | llm.bind_tools(tools)
 
@@ -73,8 +107,9 @@ async def chat_endpoint(request: Tinz):
         }
     }
 
-    for event in graph.stream({"messages": [{"role": "user", "content": request.user}]}, config):
-        print(event) #for debugging
+    graph_input = {"messages": [{"role": "user", "content": request.user}], "mid": request.mid}
+    for event in graph.stream(graph_input, config):
+        #print(event) #for debugging
         for value in event.values():
             assistant = value["messages"][-1].content
             answer = assistant.split("</think>")[-1].replace("\n", " ").strip()

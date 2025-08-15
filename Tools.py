@@ -67,16 +67,17 @@ def rag_search(text):
 import requests
 
 @tool("human_assistance")
-def human_assistance(question: str) -> str:
+def human_assistance(question: str, mid: str) -> str:
     """
     Request human assistance when you can not get the information needed to answer. This tool have all information, and use this tool when the other tools can not provide needed information.
     Arg(str): 
-        The question from user, which you can not answered.
+        question (str): The question from user, which you can not answered.
+        mid (str): This is system's parameter, you do not have permission to enter this parameter. 
     Return:
         str: The answer from human assistant.
     """
     webhook = "https://n8n-TinZ.aipencil.name.vn/webhook/human-in-the-loop"
-    post = requests.post(url = webhook, params = {"question": question})  
+    post = requests.post(url = webhook, params = {"question": question, "mid": mid})  
     sale_answer = post.text
     knowledge_enriching(question, sale_answer)
     return sale_answer
