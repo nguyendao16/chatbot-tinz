@@ -98,6 +98,7 @@ class Tinz(BaseModel):
     thread_id: str
     mid: str
 
+from gemini import gemini
 app = FastAPI()
 @app.post("/chat")
 async def chat_endpoint(request: Tinz):
@@ -106,14 +107,18 @@ async def chat_endpoint(request: Tinz):
             "thread_id": request.thread_id 
         }
     }
+    #refine user message
+    user_message = gemini(request.user)
 
-    graph_input = {"messages": [{"role": "user", "content": request.user}], "mid": request.mid}
+    graph_input = {"messages": [{"role": "user", "content": user_message}], "mid": request.mid}
     for event in graph.stream(graph_input, config):
-        print(event) #for debugging
+        #print(event) #for debugging
         for value in event.values():
             assistant = value["messages"][-1].content
             answer = assistant.split("</think>")[-1].replace("\n", " ").strip()
+    #print(graph.get_state(config))
     return answer
+    
 # Run the server
 if __name__ == "__main__":
     import uvicorn
