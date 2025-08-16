@@ -83,12 +83,14 @@ def human_assistance(question: str, mid: str) -> str:
     return sale_answer
 
 from langchain_ollama import OllamaEmbeddings
+from gemini import gemini
 import psycopg2
 def knowledge_enriching(question:str, answer:str):
     embedding = OllamaEmbeddings(model = "bge-m3:latest")
     content = f"CÂU HỎI: {question} CÂU TRẢ LỜI: {answer}"
+    content = gemini(content)
     chunk = embedding.embed_query(content)
-
+    
     connection = psycopg2.connect("host=100.107.93.75 dbname=Chatbot_db user=n8n_user password=n8n_pass") 
     cursor = connection.cursor()
     cursor.execute("INSERT INTO vector_store (content, embedding) VALUES (%s, %s)", (content, chunk))
