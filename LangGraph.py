@@ -15,7 +15,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import json
 
-llm = ChatOllama(model = "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q3_K_L",
+llm = ChatOllama(model = "qwen3:14b",
                 temperature = 0.1,
                 top_k = 20,
                 top_p = 0.6,
@@ -66,7 +66,7 @@ class ToolNode:
                 )
             outputs.append(
                 ToolMessage(
-                    content=json.dumps(tool_result),
+                    content=json.dumps(tool_result, ensure_ascii=False, indent=2),
                     name=tool_call["name"],
                     tool_call_id=tool_call["id"],
                 )
@@ -109,7 +109,7 @@ async def chat_endpoint(request: Tinz):
 
     graph_input = {"messages": [{"role": "user", "content": request.user}], "mid": request.mid}
     for event in graph.stream(graph_input, config):
-        #print(event) #for debugging
+        print(event) #for debugging
         for value in event.values():
             assistant = value["messages"][-1].content
             answer = assistant.split("</think>")[-1].replace("\n", " ").strip()
